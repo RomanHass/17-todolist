@@ -50,8 +50,8 @@ export const tasksSlice = createSlice({
       .addCase(removeTodolist, (state, action) => {
         delete state[action.payload.id]
       })
-      .addCase(clearTasksAndTodolists, (state, action) => {
-        return action.payload.tasks
+      .addCase(clearTasksAndTodolists, () => {
+        return {}
       })
   },
   selectors: {
