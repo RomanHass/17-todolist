@@ -2,12 +2,11 @@ import { ResultCode } from "common/enums"
 import { handleServerAppError } from "common/utils/handleServerAppError"
 import { handleServerNetworkError } from "common/utils/handleServerNetworkError"
 import { Dispatch } from "redux"
-import { clearTasks } from "../../todolists/model/tasksSlice"
 import { authApi } from "../api/authAPI"
 import { LoginArgs } from "../api/authAPI.types"
 import { createSlice } from "@reduxjs/toolkit"
 import { setAppStatus } from "app/appSlice"
-import { clearTodolists } from "features/todolists/model/todolistsSlice"
+import { clearTasksAndTodolists } from "common/actions/common.actions"
 
 export const authSlice = createSlice({
   name: "authorization",
@@ -60,8 +59,7 @@ export const logoutTC = () => (dispatch: Dispatch) => {
       if (res.data.resultCode === ResultCode.Success) {
         dispatch(setAppStatus({ status: "succeeded" }))
         dispatch(setIsLoggedIn({ isLoggedIn: false }))
-        dispatch(clearTasks())
-        dispatch(clearTodolists())
+        dispatch(clearTasksAndTodolists({ tasks: {}, todolists: [] }))
         localStorage.removeItem("sn-token")
       } else {
         handleServerAppError(res.data, dispatch)
