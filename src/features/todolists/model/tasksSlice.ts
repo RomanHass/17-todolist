@@ -9,6 +9,7 @@ import { DomainTask, UpdateTaskDomainModel, UpdateTaskModel } from "../api/tasks
 import { createSlice } from "@reduxjs/toolkit"
 import { addTodolist, removeTodolist } from "./todolistsSlice"
 import { clearTasksAndTodolists } from "common/actions/common.actions"
+import { createAppAsyncThunk } from "common/utils"
 
 export type TasksStateType = {
   [key: string]: DomainTask[]
@@ -18,9 +19,6 @@ export const tasksSlice = createSlice({
   name: "tasks",
   initialState: {} as TasksStateType,
   reducers: (create) => ({
-    setTasks: create.reducer<{ todolistId: string; tasks: DomainTask[] }>((state, action) => {
-      state[action.payload.todolistId] = action.payload.tasks
-    }),
     addTask: create.reducer<{ task: DomainTask }>((state, action) => {
       const tasks = state[action.payload.task.todoListId]
       tasks.unshift(action.payload.task)
@@ -44,6 +42,9 @@ export const tasksSlice = createSlice({
   }),
   extraReducers: (builder) => {
     builder
+      .addCase(fetchTasks.fulfilled, (state, action) => {
+        state[action.payload.todolistId] = action.payload.tasks
+      })
       .addCase(addTodolist, (state, action) => {
         state[action.payload.todolist.id] = []
       })
@@ -59,23 +60,25 @@ export const tasksSlice = createSlice({
   },
 })
 
-export const { setTasks, addTask, removeTask, updateTask } = tasksSlice.actions
+export const { addTask, removeTask, updateTask } = tasksSlice.actions
 export const { selectTasks } = tasksSlice.selectors
 export const tasksReducer = tasksSlice.reducer
 
 // Thunks
-export const fetchTasksTC = (todolistId: string) => (dispatch: Dispatch) => {
-  dispatch(setAppStatus({ status: "loading" }))
-  tasksApi
-    .getTasks(todolistId)
-    .then((res) => {
+export const fetchTasks = createAppAsyncThunk<{ todolistId: string; tasks: DomainTask[] }, string>(
+  `${tasksSlice.name}/fetchTasks`,
+  async (todolistId, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setAppStatus({ status: "loading" }))
+      const res = await tasksApi.getTasks(todolistId)
       dispatch(setAppStatus({ status: "succeeded" }))
-      dispatch(setTasks({ todolistId, tasks: res.data.items }))
-    })
-    .catch((error) => {
+      return { todolistId, tasks: res.data.items }
+    } catch (error: any) {
       handleServerNetworkError(error, dispatch)
-    })
-}
+      return rejectWithValue(null)
+    }
+  },
+)
 
 export const removeTaskTC = (arg: { taskId: string; todolistId: string }) => (dispatch: Dispatch) => {
   dispatch(setAppStatus({ status: "loading" }))
